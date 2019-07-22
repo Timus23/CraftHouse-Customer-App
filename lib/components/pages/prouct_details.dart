@@ -9,16 +9,21 @@ import 'package:smooth_star_rating/smooth_star_rating.dart';
 import 'package:http/http.dart' as http;
 
 class ProductDetails extends StatefulWidget {
-  final String productId;
-
-  ProductDetails({@required this.productId});
+  Map<String, dynamic> productDetail;
+  ProductDetails({@required this.productDetail});
 
   @override
   _ProductDetailsState createState() => _ProductDetailsState();
 }
 
 class _ProductDetailsState extends State<ProductDetails> {
-  Map<String, dynamic> productDetail;
+  var prod;
+  @override
+  void initState() {
+    prod = widget.productDetail;
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     Widget displayBody() {
@@ -26,7 +31,7 @@ class _ProductDetailsState extends State<ProductDetails> {
         appBar: new AppBar(
           elevation: 0.1,
           backgroundColor: Colors.red,
-          title: Text(productDetail['product_name']),
+          title: Text(prod['product_name']),
         ),
         body: ListView(
           children: <Widget>[
@@ -38,9 +43,9 @@ class _ProductDetailsState extends State<ProductDetails> {
                   child: new Carousel(
                     boxFit: BoxFit.fitHeight,
                     images: [
-                      NetworkImage(Server.media + productDetail['images'][0]),
-                      NetworkImage(Server.media + productDetail['images'][1]),
-                      NetworkImage(Server.media + productDetail['images'][2]),
+                      NetworkImage(Server.media + prod['images'][0]),
+                      NetworkImage(Server.media + prod['images'][1]),
+                      NetworkImage(Server.media + prod['images'][2]),
                     ],
                     autoplay: false,
                     animationCurve: Curves.fastLinearToSlowEaseIn,
@@ -61,14 +66,14 @@ class _ProductDetailsState extends State<ProductDetails> {
                   color: Colors.red,
                   allowHalfRating: true,
                   borderColor: Colors.red,
-                  rating: productDetail['average_rating'].toDouble() - 0.01,
+                  rating: prod['average_rating'].toDouble() - 0.01,
                   size: 20,
                   starCount: 5,
                   spacing: 2.0,
                 )),
                 Expanded(
                   child: new Text(
-                    "\$${productDetail['product_price']}",
+                    "\$${prod['product_price']}",
                     style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 20,
@@ -129,10 +134,10 @@ class _ProductDetailsState extends State<ProductDetails> {
                           context,
                           MaterialPageRoute(
                             builder: (context) => new Product_shipping(
-                                  psname: productDetail['product_name'],
-                                  psid: productDetail['id'],
-                                  psimage: productDetail['images'][0],
-                                  psprice: productDetail['product_price'],
+                                  psname: prod['product_name'],
+                                  psid: prod['id'],
+                                  psimage: prod['images'][0],
+                                  psprice: prod['product_price'],
                                 ),
                           ),
                         );
@@ -153,7 +158,7 @@ class _ProductDetailsState extends State<ProductDetails> {
             Divider(),
             new ListTile(
               title: new Text("Product details"),
-              subtitle: new Text(productDetail['product_description']),
+              subtitle: new Text(prod['product_description']),
             ),
             Divider(),
             new Row(
@@ -165,7 +170,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                 ),
                 Padding(
                   padding: EdgeInsets.all(5.0),
-                  child: new Text(productDetail['product_name']),
+                  child: new Text(prod['product_name']),
                 )
               ],
             ),
@@ -178,7 +183,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                 ),
                 Padding(
                   padding: EdgeInsets.all(5.0),
-                  child: new Text(productDetail['product_made_of']),
+                  child: new Text(prod['product_made_of']),
                 )
               ],
             ),
@@ -222,27 +227,27 @@ class _ProductDetailsState extends State<ProductDetails> {
       );
     }
 
-    return FutureBuilder(
-      future: http.get(Server.products + widget.productId + '/'),
-      builder: (context, snap) {
-        if (snap.connectionState == ConnectionState.waiting) {
-          return Scaffold(
-            appBar: new AppBar(
-              elevation: 0.1,
-              backgroundColor: Colors.red,
-            ),
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
-        } else if (snap.connectionState == ConnectionState.done) {
-          productDetail = json.decode(snap.data.body);
-          print('---------------------------------');
-          print(productDetail);
-          return displayBody();
-        }
-      },
-    );
+    // return FutureBuilder(
+    //   future: http.get(Server.products + widget.productId + '/'),
+    //   builder: (context, snap) {
+    //     if (snap.connectionState == ConnectionState.waiting) {
+    //       return Scaffold(
+    //         appBar: new AppBar(
+    //           elevation: 0.1,
+    //           backgroundColor: Colors.red,
+    //         ),
+    //         body: Center(
+    //           child: CircularProgressIndicator(),
+    //         ),
+    //       );
+    //     } else if (snap.connectionState == ConnectionState.done) {
+    //       productDetail = json.decode(snap.data.body);
+    //       print('---------------------------------');
+    //       print(productDetail);
+    return displayBody();
+    //     }
+    //   },
+    // );
   }
 }
 

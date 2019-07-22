@@ -243,8 +243,6 @@ class _HomepageState extends State<Homepage> {
                   );
                 } else if (snap.connectionState == ConnectionState.done) {
                   List<dynamic> products = json.decode(snap.data.body);
-                  print('----------------------');
-                  print(products);
                   return Products(
                     products: products,
                   );
@@ -305,29 +303,46 @@ class _SearchAppBarDelegate extends SearchDelegate<String> {
   // Builds page to populate search results.
   @override
   Widget buildResults(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Center(
-        child: Products(),
-        //Column(
-        //mainAxisSize: MainAxisSize.min,
-        //children: <Widget>[
-        //GestureDetector(
-        //onTap: () {
-        //needs to be resolved.
-        //this.close(context, null);
-        //},
-        //child: Text(
-        //this.query,
-        //style: Theme.of(context)
-        // .textTheme
-        //   .display2
-        //     .copyWith(fontWeight: FontWeight.normal),
-        // ),
-        // ),
-        // ],
-        //),
-      ),
+    print(this.query);
+    return FutureBuilder(
+      future: http.get(Server.searchProduct + this.query.toLowerCase() + '/'),
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return Container(
+            child: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        } else if (snap.connectionState == ConnectionState.done) {
+          var list = json.decode(snap.data.body);
+          return Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Center(
+              child: Products(
+                products: list,
+              ),
+              //Column(
+              //mainAxisSize: MainAxisSize.min,
+              //children: <Widget>[
+              //GestureDetector(
+              //onTap: () {
+              //needs to be resolved.
+              //this.close(context, null);
+              //},
+              //child: Text(
+              //this.query,
+              //style: Theme.of(context)
+              // .textTheme
+              //   .display2
+              //     .copyWith(fontWeight: FontWeight.normal),
+              // ),
+              // ),
+              // ],
+              //),
+            ),
+          );
+        }
+      },
     );
   }
 

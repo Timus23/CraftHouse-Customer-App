@@ -3,6 +3,7 @@ import 'package:customer/components/pages/carpet.dart';
 import 'package:customer/components/pages/paintings.dart';
 import 'package:customer/components/pages/sculpture.dart';
 import 'package:customer/components/pages/others.dart';
+import 'package:http/http.dart' as http;
 
 class HorizontalList extends StatelessWidget {
   final List<dynamic> category;
@@ -41,6 +42,7 @@ class Category extends StatelessWidget {
       child: InkWell(
         onTap: () {
           var s = image_caption;
+          
           if (s == 'Sculpture') {
             Navigator.push(context,
                 MaterialPageRoute(builder: (context) => new Sculpture()));

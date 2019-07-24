@@ -2,11 +2,14 @@ import 'dart:convert';
 import 'dart:ui' as prefix0;
 
 import 'package:customer/ServerAddress.dart';
+import 'package:customer/components/pages/login1.dart';
 import 'package:flutter/material.dart';
 import 'package:customer/components/pages/product_shipment.dart';
 import 'package:carousel_pro/carousel_pro.dart';
 import 'package:smooth_star_rating/smooth_star_rating.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:toast/toast.dart';
 
 class ProductDetails extends StatefulWidget {
   Map<String, dynamic> productDetail;
@@ -18,10 +21,231 @@ class ProductDetails extends StatefulWidget {
 
 class _ProductDetailsState extends State<ProductDetails> {
   var prod;
+  bool authenticate;
+  Map<String, String> userInfo = {};
+  Map<String, String> body = {};
+  var rating = 0.0;
+  final _formKey = GlobalKey<FormState>();
+  Map<String, String> config = {'Content-Type': 'application/json'};
+  String reviewed;
+  int _quantity = 0;
+
   @override
   void initState() {
     prod = widget.productDetail;
     super.initState();
+    checkAuthentication();
+  }
+
+  checkAuthentication() async {
+    SharedPreferences pref = await SharedPreferences.getInstance();
+    if (pref.getString('token') == null) {
+      setState(() {
+        authenticate = false;
+        print('----------------------------------------');
+        print('not login');
+      });
+    } else {
+      setState(() {
+        authenticate = true;
+        print('----------------------------------------');
+        print('login');
+        config['Authorization'] = 'Token ' + pref.getString('token');
+        userInfo['id'] = pref.getInt('id').toString();
+        userInfo['first_name'] = pref.getString('first_name');
+        userInfo['last_name'] = pref.getString('last_name');
+        userInfo['email'] = pref.getString('email');
+        userInfo['phone_no'] = pref.getString('phone_no');
+      });
+    }
+  }
+
+  Widget ratingBar() {
+    return Row(
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12.0, 5.0, 5.0, 5.0),
+          child: new Text("Rate this product ",
+              style: TextStyle(color: Colors.grey)),
+        ),
+        Padding(
+          padding: EdgeInsets.all(5.0),
+          child: SmoothStarRating(
+            color: Colors.red,
+            borderColor: Colors.red,
+            rating: rating,
+            size: 28,
+            starCount: 5,
+            spacing: 2.0,
+            onRatingChanged: (value) {
+              setState(() {
+                rating = value;
+              });
+            },
+          ),
+        ),
+        Padding(
+          padding: EdgeInsets.all(5.0),
+          child: RaisedButton(
+            onPressed: () {
+              if (authenticate) {
+                print('aayo');
+                var data = {
+                  'user_id': userInfo['id'],
+                  'first_name': userInfo['first_name'],
+                  'email': userInfo['email'],
+                  'rating': rating.toInt().toString(),
+                  'product_id': prod['id'].toString()
+                };
+                http
+                    .post(Server.rateProduct,
+                        headers: config, body: json.encode(data))
+                    .then((http.Response res) {
+                  if (res.statusCode == 201) {
+                    print('------------------------');
+                    print('rating vayo');
+                    http
+                        .get(Server.products + prod['id'].toString() + '/')
+                        .then((http.Response r) {
+                      if (r.statusCode == 200 || r.statusCode == 201) {
+                        setState(() {
+                          checkAuthentication();
+                          prod = json.decode(r.body);
+                          rating = 0.0;
+                        });
+                        Toast.show("Rated Successfully", context,
+                            duration: Toast.LENGTH_SHORT,
+                            gravity: Toast.BOTTOM);
+                      }
+                    });
+                  } else {
+                    print('------------------------');
+                    print('rating vayena');
+                    print(res.statusCode);
+                    Toast.show("Unable to rate the Product", context,
+                        duration: Toast.LENGTH_SHORT, gravity: Toast.BOTTOM);
+                  }
+                });
+              } else {
+                Toast.show("Please Login to give rating", context,
+                    duration: Toast.LENGTH_SHORT, gravity: Toast.BOTTOM);
+
+                Navigator.of(context).push(MaterialPageRoute(
+                    builder: (BuildContext context) => Login()));
+              }
+            },
+            child: Text("Submit", style: TextStyle(color: Colors.white)),
+            color: Colors.red,
+          ),
+        )
+      ],
+    );
+  }
+
+  Widget reviewBar() {
+    return Row(
+      children: <Widget>[
+        new Flexible(
+          child: Form(
+            key: _formKey,
+            child: TextFormField(
+              decoration: InputDecoration(
+                  fillColor: Colors.grey,
+                  contentPadding: const EdgeInsets.all(10.0),
+                  hintText: "Review this product",
+                  hintStyle: TextStyle(
+                      color: Colors.blueGrey,
+                      fontStyle: FontStyle.italic,
+                      fontSize: 15),
+                  border: InputBorder.none),
+              validator: (value) {
+                if (value.isEmpty) {
+                  return "Cannot enter an empty review";
+                }
+                // return null;
+              },
+              style: TextStyle(color: Colors.black),
+              onSaved: (String val) {
+                reviewed = val;
+              },
+            ),
+          ),
+        ),
+        Padding(
+            padding: EdgeInsets.all(5.0),
+            child: RaisedButton(
+              onPressed: () {
+                if (_formKey.currentState.validate()) {
+                  _formKey.currentState.save();
+                  if (authenticate) {
+                    print('aayo');
+                    print(reviewed);
+                    Map<String, String> data = {
+                      'user_id': userInfo['id'].toString(),
+                      'first_name': userInfo['first_name'].toString(),
+                      'email': userInfo['email'].toString(),
+                      'comment': reviewed.trim().toString(),
+                      'product_id': prod['id'].toString()
+                    };
+                    http
+                        .post(Server.reviewProduct,
+                            headers: config, body: json.encode(data))
+                        .then((http.Response res) {
+                      if (res.statusCode == 201) {
+                        print('------------------------');
+                        print('review vayo');
+                        http
+                            .get(Server.products + prod['id'].toString() + '/')
+                            .then((http.Response r) {
+                          if (r.statusCode == 200 || r.statusCode == 201) {
+                            setState(() {
+                              prod = json.decode(r.body);
+                              checkAuthentication();
+                              _formKey.currentState.reset();
+                            });
+                            Toast.show("Review Successfully", context,
+                                duration: Toast.LENGTH_SHORT,
+                                gravity: Toast.BOTTOM);
+                          }
+                        });
+                      } else {
+                        print('------------------------');
+                        print('review vayena');
+                        print(res.statusCode);
+                        Toast.show("Unable to review the Product", context,
+                            duration: Toast.LENGTH_SHORT,
+                            gravity: Toast.BOTTOM);
+                      }
+                    });
+                  } else {
+                    Toast.show("Please Login to give review", context,
+                        duration: Toast.LENGTH_SHORT, gravity: Toast.BOTTOM);
+
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (BuildContext context) => Login()));
+                  }
+                }
+              },
+              child: Text("Submit", style: TextStyle(color: Colors.white)),
+              color: Colors.red,
+            ))
+      ],
+    );
+  }
+
+  Widget reviewList() {
+    return ListView.builder(
+        itemCount: prod['reviews'].length,
+        itemBuilder: (context, int index) {
+          return ListTile(
+            title: new Text(
+              prod['reviews'][index]['comment'],
+              style: TextStyle(fontSize: 18),
+            ),
+            subtitle: new Text(prod['reviews'][index]['first_name'],
+                style: TextStyle(color: Colors.red)),
+          );
+        });
   }
 
   @override
@@ -87,38 +311,60 @@ class _ProductDetailsState extends State<ProductDetails> {
               children: <Widget>[
                 //the quantity button
                 Expanded(
-                  child: MaterialButton(
-                    onPressed: () {
-                      showDialog(
-                          context: context,
-                          builder: (context) {
-                            return new AlertDialog(
-                              title: new Text("Quantity"),
-                              content: new Text("Choose the quantity"),
-                              actions: <Widget>[
-                                new MaterialButton(
-                                  onPressed: () {
-                                    Navigator.of(context).pop(context);
-                                  },
-                                  child: new Text("Close"),
-                                )
-                              ],
-                            );
-                          });
-                    },
-                    color: Colors.white,
-                    textColor: Colors.grey,
-                    elevation: 0.2,
-                    child: Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: new Text("Quantity"),
-                        ),
-                        Expanded(
-                          child: new Icon(Icons.arrow_drop_down),
-                        ),
-                      ],
-                    ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: <Widget>[
+                      Text(
+                        'Quantity:',
+                        style: TextStyle(fontSize: 18),
+                      ),
+                      Row(
+                        children: <Widget>[
+                          IconButton(
+                            icon: Icon(
+                              Icons.remove,
+                              color: Colors.black,
+                            ),
+                            onPressed: () {
+                              if (_quantity - 1 < 0) {
+                                Toast.show(
+                                    'Quantity cannot be less than 0', context,
+                                    duration: Toast.LENGTH_SHORT,
+                                    gravity: Toast.BOTTOM);
+                              } else {
+                                setState(() {
+                                  _quantity--;
+                                });
+                              }
+                            },
+                          ),
+                          CircleAvatar(
+                            backgroundColor: Colors.red,
+                            child: Text(
+                              _quantity.toString(),
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              Icons.add,
+                              color: Colors.black,
+                            ),
+                            onPressed: () {
+                              if (_quantity + 1 > prod['product_quantity']) {
+                                Toast.show('Out of Stock', context,
+                                    duration: Toast.LENGTH_SHORT,
+                                    gravity: Toast.BOTTOM);
+                              } else {
+                                setState(() {
+                                  _quantity++;
+                                });
+                              }
+                            },
+                          ),
+                        ],
+                      )
+                    ],
                   ),
                 ),
               ],
@@ -130,17 +376,34 @@ class _ProductDetailsState extends State<ProductDetails> {
                 Expanded(
                   child: MaterialButton(
                       onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => new Product_shipping(
-                                  psname: prod['product_name'],
-                                  psid: prod['id'],
-                                  psimage: prod['images'][0],
-                                  psprice: prod['product_price'],
-                                ),
-                          ),
-                        );
+                        if (_quantity == 0) {
+                          Toast.show(
+                              'Quantity must be greater than 0', context);
+                        } else {
+                          print('------------------------');
+                          print(userInfo);
+                          if (userInfo.length == 0) {
+                            Toast.show('Please Log In', context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => Login(),
+                              ),
+                            );
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => new ProductShipping(
+                                      config: config,
+                                      productDetail: prod,
+                                      userInfo: userInfo,
+                                      quantity: _quantity,
+                                    ),
+                              ),
+                            );
+                          }
+                        }
                       },
                       color: Colors.red,
                       textColor: Colors.white,
@@ -152,7 +415,31 @@ class _ProductDetailsState extends State<ProductDetails> {
                       Icons.add_shopping_cart,
                       color: Colors.red,
                     ),
-                    onPressed: () {}),
+                    onPressed: () {
+                      Map<String, String> data = {
+                        'user_id': userInfo['id'].toString(),
+                        'product_id': prod['id'].toString(),
+                        'quantity': _quantity.toString()
+                      };
+                      http
+                          .post(Server.cart,
+                              headers: config, body: json.encode(data))
+                          .then((http.Response res) {
+                        if (res.statusCode == 200 || res.statusCode == 201) {
+                          Toast.show('Added To cart', context);
+                        } else if (res.statusCode == 400) {
+                          Map<String, dynamic> temp = json.decode(res.body);
+                          print(temp);
+                          if (temp.containsKey('non_field_errors')) {
+                            Toast.show('Product Already in Cart', context);
+                          } else {
+                            Toast.show('Unable to add to cart', context);
+                          }
+                        } else {
+                          Toast.show('Unable to add to cart', context);
+                        }
+                      });
+                    }),
               ],
             ),
             Divider(),
@@ -188,26 +475,9 @@ class _ProductDetailsState extends State<ProductDetails> {
               ],
             ),
             Divider(),
-            new Row(
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12.0, 5.0, 5.0, 5.0),
-                  child: new Text("Rate this product ",
-                      style: TextStyle(color: Colors.grey)),
-                ),
-                RatingBar(),
-                Padding(
-                    padding: EdgeInsets.all(5.0),
-                    child: RaisedButton(
-                      onPressed: () {},
-                      child:
-                          Text("Submit", style: TextStyle(color: Colors.white)),
-                      color: Colors.red,
-                    ))
-              ],
-            ),
+            ratingBar(),
             Divider(),
-            ReviewBar(),
+            reviewBar(),
             Divider(),
             Padding(
               padding: const EdgeInsets.all(8.0),
@@ -218,138 +488,21 @@ class _ProductDetailsState extends State<ProductDetails> {
                       fontStyle: FontStyle.italic)),
             ),
             //REview product section
-            Container(
-              height: 340.0,
-              child: review(),
-            )
+            prod['reviews'].length == 0
+                ? Container(
+                    child: ListTile(
+                      title: Text('No Reviews'),
+                    ),
+                  )
+                : Container(
+                    height: 340.0,
+                    child: reviewList(),
+                  )
           ],
         ),
       );
     }
 
-    // return FutureBuilder(
-    //   future: http.get(Server.products + widget.productId + '/'),
-    //   builder: (context, snap) {
-    //     if (snap.connectionState == ConnectionState.waiting) {
-    //       return Scaffold(
-    //         appBar: new AppBar(
-    //           elevation: 0.1,
-    //           backgroundColor: Colors.red,
-    //         ),
-    //         body: Center(
-    //           child: CircularProgressIndicator(),
-    //         ),
-    //       );
-    //     } else if (snap.connectionState == ConnectionState.done) {
-    //       productDetail = json.decode(snap.data.body);
-    //       print('---------------------------------');
-    //       print(productDetail);
     return displayBody();
-    //     }
-    //   },
-    // );
-  }
-}
-
-class ReviewBar extends StatefulWidget {
-  @override
-  State<StatefulWidget> createState() {
-    return ReviewBarState();
-  }
-}
-
-class ReviewBarState extends State<ReviewBar> {
-  String reviewed;
-
-  @override
-  Widget build(BuildContext context) {
-    return new Row(
-      children: <Widget>[
-        new Flexible(
-          child: TextFormField(
-            decoration: InputDecoration(
-                fillColor: Colors.grey,
-                contentPadding: const EdgeInsets.all(10.0),
-                hintText: "Review this product",
-                hintStyle: TextStyle(
-                    color: Colors.blueGrey,
-                    fontStyle: FontStyle.italic,
-                    fontSize: 15),
-                border: InputBorder.none),
-            validator: (value) {
-              if (value.isEmpty) {
-                return "Cannot enter an empty review";
-              }
-              // return null;
-            },
-            style: TextStyle(color: Colors.red),
-            onSaved: (String val) {
-              reviewed = val;
-            },
-          ),
-        ),
-        Padding(
-            padding: EdgeInsets.all(5.0),
-            child: RaisedButton(
-              onPressed: () {},
-              child: Text("Submit", style: TextStyle(color: Colors.white)),
-              color: Colors.red,
-            ))
-      ],
-    );
-  }
-}
-
-class RatingBar extends StatefulWidget {
-  @override
-  State<StatefulWidget> createState() {
-    return RatingBarState();
-  }
-}
-
-class RatingBarState extends State<RatingBar> {
-  var rating = 0.0;
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-        padding: EdgeInsets.all(5.0),
-        child: SmoothStarRating(
-          color: Colors.red,
-          borderColor: Colors.red,
-          rating: rating,
-          size: 28,
-          starCount: 5,
-          spacing: 2.0,
-          onRatingChanged: (value) {
-            setState(() {
-              rating = value;
-            });
-          },
-        ));
-  }
-}
-
-class review extends StatelessWidget {
-  var reviews_list = [
-    {
-      "user": "andy",
-      "view": "Nice product",
-    },
-    {
-      "user": "james",
-      "view": "good Product",
-    }
-  ];
-  @override
-  Widget build(BuildContext context) {
-    return new ListView.builder(
-        itemCount: reviews_list.length,
-        itemBuilder: (context, int index) {
-          return ListTile(
-            title: new Text(reviews_list[index]['user'],
-                style: TextStyle(color: Colors.red)),
-            subtitle: new Text(reviews_list[index]['view']),
-          );
-        });
   }
 }

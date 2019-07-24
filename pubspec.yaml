@@ -27,10 +27,10 @@ dependencies:
   wave: ^0.0.8
   flutter_custom_clippers: ^0.1.6
   smooth_star_rating: ^1.0.3
-  flutter_youtube: ^1.1.6
-  video_player: ^0.10.1
-  chewie: ^0.9.7
   http: ^0.12.0+2
+  flutter_khalti: ^0.2.0
+  shared_preferences: ^0.5.3+4
+  toast: ^0.1.5
 
 
 dev_dependencies:

@@ -1,6 +1,12 @@
+import 'package:customer/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_custom_clippers/flutter_custom_clippers.dart';
 import 'package:customer/components/signup.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:customer/ServerAddress.dart';
+import 'package:toast/toast.dart';
+import 'dart:convert';
 
 class Login extends StatefulWidget {
   @override
@@ -8,150 +14,238 @@ class Login extends StatefulWidget {
 }
 
 class _LoginState extends State<Login> {
+  bool _isLoading = false;
   final _formKey = GlobalKey<FormState>();
+  String username, password;
+  Map<String, String> config = {'Content-Type': 'application/json'};
 
+  SharedPreferences prefs;
 
   Container _buildLoginForm() {
     return Container(
-          padding: EdgeInsets.all(20.0),
-          child: Stack(
-            children: <Widget>[
-              ClipPath(
-                clipper: RoundedDiagonalPathClipper(),
-                child: Container(
-                  height: 400,
-                  padding: EdgeInsets.all(10.0),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.all(Radius.circular(40.0)),
-                    color: Colors.white,
+      padding: EdgeInsets.all(20.0),
+      child: Stack(
+        children: <Widget>[
+          ClipPath(
+            clipper: RoundedDiagonalPathClipper(),
+            child: Container(
+              height: 400,
+              padding: EdgeInsets.all(10.0),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.all(Radius.circular(40.0)),
+                color: Colors.white,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  SizedBox(
+                    height: 90.0,
                   ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      SizedBox(height: 90.0,),
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 20.0),
-                        child: TextFormField(
-                                      validator:validateEmail ,
-                          style: TextStyle(color: Colors.red),
-                          decoration: InputDecoration(
+                  Container(
+                      padding: EdgeInsets.symmetric(horizontal: 20.0),
+                      child: TextFormField(
+                        validator: validateEmail,
+                        style: TextStyle(color: Colors.red),
+                        onSaved: (v) {
+                          username = v;
+                        },
+                        decoration: InputDecoration(
                             hintText: "Email address",
                             hintStyle: TextStyle(color: Colors.red.shade200),
                             border: InputBorder.none,
-                            icon: Icon(Icons.email, color: Colors.red,)
-                          ),
-                        )
+                            icon: Icon(
+                              Icons.email,
+                              color: Colors.red,
+                            )),
+                      )),
+                  Container(
+                    child: Divider(
+                      color: Colors.red.shade400,
+                    ),
+                    padding:
+                        EdgeInsets.only(left: 20.0, right: 20.0, bottom: 10.0),
+                  ),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 20.0),
+                    child: TextFormField(
+                      obscureText: true,
+                      validator: (String arg) {
+                        if (arg.length < 5)
+                          return 'Password must be more than 5 character';
+                        else
+                          return null;
+                      },
+                      style: TextStyle(color: Colors.red),
+                      onSaved: (v) {
+                        password = v;
+                      },
+                      decoration: InputDecoration(
+                        
+                        hintText: "Password",
+                        hintStyle: TextStyle(color: Colors.red.shade200),
+                        border: InputBorder.none,
+                        icon: Icon(
+                          Icons.lock,
+                          color: Colors.red,
+                        ),
                       ),
-                      Container(child: Divider(color: Colors.red.shade400,), padding: EdgeInsets.only(left: 20.0,right: 20.0, bottom: 10.0),),
+                    ),
+                  ),
+                  Container(
+                    child: Divider(
+                      color: Colors.red.shade400,
+                    ),
+                    padding:
+                        EdgeInsets.only(left: 20.0, right: 20.0, bottom: 10.0),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: <Widget>[
                       Container(
-                        padding: EdgeInsets.symmetric(horizontal: 20.0),
-                        child: TextFormField(
-                           validator: (String arg) {
-                            if(arg.length < 5)
-                            return 'Password must be more than 5 character';
-                            else
-                            return null;
-                           },
-                          style: TextStyle(color: Colors.red),
-                          decoration: InputDecoration(
-                            hintText: "Password",
-                            hintStyle: TextStyle(color: Colors.red.shade200),
-                            border: InputBorder.none,
-                            icon: Icon(Icons.lock, color: Colors.red,)
-                          ),
-                        )
-                      ),
-                      Container(child: Divider(color: Colors.red.shade400,), padding: EdgeInsets.only(left: 20.0,right: 20.0, bottom: 10.0),),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: <Widget>[
-                          Container(padding: EdgeInsets.only(right: 20.0),
-                            child: Text("Forgot Password",
-                              style: TextStyle(color: Colors.black45),
-                            )
-                          )
-                        ],
-                      ),
-                      SizedBox(height: 10.0,),
-                      
+                          padding: EdgeInsets.only(right: 20.0),
+                          child: Text(
+                            "Forgot Password",
+                            style: TextStyle(color: Colors.black45),
+                          ))
                     ],
                   ),
-                ),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  CircleAvatar(
-                    radius: 40.0,
-                    backgroundColor: Colors.red.shade600,
-                    child: Icon(Icons.person),
+                  SizedBox(
+                    height: 10.0,
                   ),
                 ],
               ),
-              Container(
-                height: 420,
-                child: Align(
-                  alignment: Alignment.bottomCenter,
-                  child: RaisedButton(
-                    onPressed: (){
-                      if(_formKey.currentState.validate()){
-                     
-                  
-                      }
-                    },
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40.0)),
-                    child: Text("Login", style: TextStyle(color: Colors.white70)),
-                    color: Colors.red,
-                  ),
-                ),
-              )
-            ],
+            ),
           ),
-        );
- 
-}
-
-  String validateEmail(String value) {
-    String pattern = r'^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$';
-    RegExp regExp = new RegExp(pattern);
-    if (value.length == 0) {
-      return "Email is Required";
-    } else if(!regExp.hasMatch(value)){
-      return "Invalid Email";
-    }else {
-      return null;
-    }
-}
-
-
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(body: Form(
-      key: _formKey,
-      child: 
-    Container(
-      color: Colors.red.shade100,
-      child: ListView(
-        children: <Widget>[
-        
-          _buildLoginForm(),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              FlatButton(
-                onPressed: (){
-                  Navigator.push(context, MaterialPageRoute(
-                    builder: (BuildContext context) =>  Signup()
-                  ));
-                },
-                child: Text("Sign Up!", style: TextStyle(color: Colors.red, fontSize: 18.0)),
-              )
+              CircleAvatar(
+                radius: 40.0,
+                backgroundColor: Colors.red.shade600,
+                child: Icon(Icons.person),
+              ),
             ],
+          ),
+          Container(
+            height: 420,
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: RaisedButton(
+                onPressed: loginButton,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(40.0)),
+                child: Text("Login", style: TextStyle(color: Colors.white70)),
+                color: Colors.red,
+              ),
+            ),
           )
         ],
       ),
-    ),),);
+    );
+  }
+
+  void loginButton() {
+    if (_formKey.currentState.validate()) {
+      _formKey.currentState.save();
+      setState(() {
+        _isLoading = true;
+      });
+      Map<String, String> formData = {
+        "email": username,
+        "password": password,
+      };
+      try {
+        http
+            .post(Server.login, body: json.encode(formData), headers: config)
+            .then((http.Response response) async {
+          setState(() {
+            _isLoading = false;
+          });
+          if (response.statusCode == 200) {
+            Map<String, dynamic> userData = json.decode(response.body);
+            print(userData);
+            SharedPreferences prefs = await SharedPreferences.getInstance();
+            prefs.setString('token', userData['token']);
+            prefs.setInt('id', userData['id']);
+            prefs.setString('first_name', userData['first_name']);
+            prefs.setString('last_name', userData['last_name']);
+            prefs.setString('email', userData['email']);
+            prefs.setString('phone_no', userData['phone_no']);
+            Toast.show('Login Successful', context,
+                duration: Toast.LENGTH_SHORT, gravity: Toast.BOTTOM);
+            Navigator.of(context).pop();
+          } else if (response.statusCode == 401) {
+            Map<String, dynamic> info = json.decode(response.body);
+            if (info.containsKey('detail')) {
+              if (info['detail'].contains('User account not verified.')) {
+                print(info['detail']);
+                Toast.show(info['detail'], context,
+                    duration: Toast.LENGTH_SHORT, gravity: Toast.BOTTOM);
+                // Navigator.of(context).push(
+                //   MaterialPageRoute(
+                //     builder: (BuildContext context) => Verify(
+                //           from: 'login',
+                //         ),
+                //   ),
+                // );
+              } else {
+                Toast.show(info['detail'], context,
+                    duration: Toast.LENGTH_SHORT, gravity: Toast.BOTTOM);
+              }
+            }
+          }
+        });
+      } catch (e) {
+        setState(() {
+          _isLoading = false;
+        });
+        print(e);
+      }
+    }
+  }
+
+  String validateEmail(String value) {
+    String pattern =
+        r'^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$';
+    RegExp regExp = new RegExp(pattern);
+    if (value.length == 0) {
+      return "Email is Required";
+    } else if (!regExp.hasMatch(value)) {
+      return "Invalid Email";
+    } else {
+      return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Form(
+        key: _formKey,
+        child: Container(
+          color: Colors.red.shade100,
+          child: ListView(
+            children: <Widget>[
+              _buildLoginForm(),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  FlatButton(
+                    onPressed: () {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (BuildContext context) => Signup()));
+                    },
+                    child: Text("Sign Up!",
+                        style: TextStyle(color: Colors.red, fontSize: 18.0)),
+                  )
+                ],
+              )
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
-

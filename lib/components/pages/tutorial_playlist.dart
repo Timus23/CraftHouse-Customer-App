@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:video_player/video_player.dart';
-import 'package:flutter_youtube/flutter_youtube.dart';
+// import 'package:video_player/video_player.dart';
+// import 'package:flutter_youtube/flutter_youtube.dart';
 import 'package:customer/components/pages/chewie_list_item.dart';
 import 'package:customer/components/quiz.dart';
 
@@ -27,22 +27,22 @@ class _PlaylistState extends State<Playlist> {
         ),
         body: new ListView(
           children: <Widget>[
-            ChewieListItem(
-              videoPlayerController: VideoPlayerController.network(
-                widget.plink1,
-              ),
-              looping: true,
-            ),
-            ChewieListItem(
-              videoPlayerController: VideoPlayerController.network(
-                widget.plink2,
-              ),
-            ),
-            ChewieListItem(
-              videoPlayerController: VideoPlayerController.network(
-                widget.plink3,
-              ),
-            ),
+            // ChewieListItem(
+            //   videoPlayerController: VideoPlayerController.network(
+            //     widget.plink1,
+            //   ),
+            //   looping: true,
+            // ),
+            // ChewieListItem(
+            //   videoPlayerController: VideoPlayerController.network(
+            //     widget.plink2,
+            //   ),
+            // ),
+            // ChewieListItem(
+            //   videoPlayerController: VideoPlayerController.network(
+            //     widget.plink3,
+            //   ),
+            // ),
             Divider(),
             new Row(
               children: <Widget>[
@@ -53,18 +53,16 @@ class _PlaylistState extends State<Playlist> {
                           color: Colors.grey, fontStyle: FontStyle.italic)),
                 ),
                 Padding(
-                    padding: EdgeInsets.all(5.0),
-                    child: RaisedButton(
-                      onPressed: () {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => new Quiz1()));
-                      },
-                      child:
-                          Text("Start", style: TextStyle(color: Colors.white)),
-                      color: Colors.red,
-                    ))
+                  padding: EdgeInsets.all(5.0),
+                  child: RaisedButton(
+                    onPressed: () {
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) => new Quiz1()));
+                    },
+                    child: Text("Start", style: TextStyle(color: Colors.white)),
+                    color: Colors.red,
+                  ),
+                )
               ],
             ),
           ],

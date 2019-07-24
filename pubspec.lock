@@ -29,13 +29,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.1.2"
-  chewie:
-    dependency: "direct main"
-    description:
-      name: chewie
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.9.7"
   collection:
     dependency: transitive
     description:
@@ -62,18 +55,18 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.1.6"
+  flutter_khalti:
+    dependency: "direct main"
+    description:
+      name: flutter_khalti
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.2.0"
   flutter_test:
     dependency: "direct dev"
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_youtube:
-    dependency: "direct main"
-    description:
-      name: flutter_youtube
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "1.1.6"
   http:
     dependency: "direct main"
     description:
@@ -102,13 +95,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.1.6"
-  open_iconic_flutter:
-    dependency: transitive
-    description:
-      name: open_iconic_flutter
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.3.0"
   path:
     dependency: transitive
     description:
@@ -130,13 +116,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.0.2"
-  screen:
-    dependency: transitive
+  shared_preferences:
+    dependency: "direct main"
     description:
-      name: screen
+      name: shared_preferences
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.0.5"
+    version: "0.5.3+4"
   sky_engine:
     dependency: transitive
     description: flutter
@@ -191,6 +177,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.2.4"
+  toast:
+    dependency: "direct main"
+    description:
+      name: toast
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.1.5"
   typed_data:
     dependency: transitive
     description:
@@ -205,13 +198,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.0.8"
-  video_player:
-    dependency: "direct main"
-    description:
-      name: video_player
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.10.1+5"
   wave:
     dependency: "direct main"
     description:

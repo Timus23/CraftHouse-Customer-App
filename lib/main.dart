@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:customer/ServerAddress.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:carousel_pro/carousel_pro.dart';
 import 'package:customer/components/pages/cart.dart';
@@ -13,6 +14,8 @@ import 'package:customer/components/pages/videos.dart';
 import 'package:customer/components/products.dart';
 import 'package:customer/components/pages/prouct_details.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:toast/toast.dart';
 
 void main() {
   runApp(MaterialApp(
@@ -28,6 +31,9 @@ class Homepage extends StatefulWidget {
 
 class _HomepageState extends State<Homepage> {
   final List<String> kWords;
+  SharedPreferences pref;
+  bool authenticate = false;
+  Map<String, String> userInfo = {};
   _SearchAppBarDelegate _searchDelegate;
   TextEditingController _searchController = TextEditingController();
 
@@ -40,8 +46,32 @@ class _HomepageState extends State<Homepage> {
   @override
   void initState() {
     super.initState();
+    checkAuthentication();
     //Initializing search delegate with sorted list of English words
     _searchDelegate = _SearchAppBarDelegate(kWords);
+  }
+
+  checkAuthentication() async {
+    SharedPreferences pref = await SharedPreferences.getInstance();
+    if (pref.getString('token') == null) {
+      setState(() {
+        authenticate = false;
+        print('----------------------------------------');
+        print('not login');
+      });
+    } else {
+      setState(() {
+        authenticate = true;
+        print('----------------------------------------');
+        print('login');
+        userInfo['token'] = pref.getString('token');
+        userInfo['id'] = pref.getInt('id').toString();
+        userInfo['first_name'] = pref.getString('first_name');
+        userInfo['last_name'] = pref.getString('last_name');
+        userInfo['email'] = pref.getString('email');
+        userInfo['phone_no'] = pref.getString('phone_no');
+      });
+    }
   }
 
   @override
@@ -86,8 +116,26 @@ class _HomepageState extends State<Homepage> {
                 color: Colors.white,
               ),
               onPressed: () {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => new Cart()));
+                if (userInfo['token'] == null || userInfo['id'] == null) {
+                  Toast.show('Please Log In', context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => Login(),
+                    ),
+                  );
+                  checkAuthentication();
+                } else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => new Cart(
+                            token: userInfo['token'],
+                            userId: userInfo['id'],
+                          ),
+                    ),
+                  );
+                }
               })
         ],
       ),
@@ -96,8 +144,9 @@ class _HomepageState extends State<Homepage> {
           children: <Widget>[
             // header
             new UserAccountsDrawerHeader(
-              accountName: Text('Andy'),
-              accountEmail: Text('andy@mail.com'),
+              accountName:
+                  authenticate ? Text(userInfo['first_name']) : Text(''),
+              accountEmail: authenticate ? Text(userInfo['email']) : Text(''),
               currentAccountPicture: GestureDetector(
                 child: new CircleAvatar(
                   backgroundColor: Colors.grey,
@@ -126,8 +175,13 @@ class _HomepageState extends State<Homepage> {
 
             InkWell(
               onTap: () {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => new Login()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => new Login(),
+                  ),
+                );
+                checkAuthentication();
               },
               child: ListTile(
                 title: Text('My Account'),
@@ -154,8 +208,38 @@ class _HomepageState extends State<Homepage> {
 
             InkWell(
               onTap: () {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => new Cart()));
+                print('----------------------------');
+                print(userInfo);
+                if (userInfo['token'] == null || userInfo['id'] == null) {
+                  Toast.show('Please Log In', context);
+                  Navigator.push(
+
+
+
+
+
+
+
+
+
+                    
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => Login(),
+                    ),
+                  );
+                  checkAuthentication();
+                } else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => new Cart(
+                            token: userInfo['token'],
+                            userId: userInfo['id'],
+                          ),
+                    ),
+                  );
+                }
               },
               child: ListTile(
                 title: Text('Shopping Cart'),

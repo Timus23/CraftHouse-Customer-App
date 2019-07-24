@@ -1,117 +1,260 @@
+import 'dart:convert';
+
+import 'package:customer/ServerAddress.dart';
 import 'package:flutter/material.dart';
+import 'package:toast/toast.dart';
+import 'package:http/http.dart' as http;
 
-class Cart_products extends StatefulWidget {
-  @override
-  _Cart_productsState createState() => _Cart_productsState();
-}
+class CartProducts extends StatefulWidget {
+  final List<dynamic> cartItem;
+  final String token;
 
-class _Cart_productsState extends State<Cart_products> {
-  var Products_on_the_cart=[
-    {
-      "name": "Bags",
-      "picture":"images/products/bags.jpg",
-      "price":4000,
-      "size":"a",
-      "color":"red",
-      "quantity":1,
-    },
-    {
-      "name": "Plates",
-      "picture":"images/products/plates.jpg",
-      "price":400,
-      "size":"a",
-      "color":"blue",
-      "quantity":1,
-    },
-    
-  ];
+  CartProducts({@required this.cartItem, @required this.token});
   @override
-  Widget build(BuildContext context) {
-    return new ListView.builder(
-        itemCount: Products_on_the_cart.length,
-        itemBuilder: (context, index){
-          return Single_cart_product(
-            cart_prod_name: Products_on_the_cart[index]["name"],
-            cart_prod_color: Products_on_the_cart[index]["color"],
-            cart_prod_quantity: Products_on_the_cart[index]["quantity"],
-            cart_prod_size: Products_on_the_cart[index]["size"],
-            cart_prod_picture: Products_on_the_cart[index]['picture'],
-            cart_prod_price: Products_on_the_cart[index]["price"],
-          );
-        }
-    );
+  State<StatefulWidget> createState() {
+    return CartProductState();
   }
 }
-class Single_cart_product extends StatelessWidget {
-  final cart_prod_name;
-  final cart_prod_picture;
-  final cart_prod_price;
-  final cart_prod_size;
-  final cart_prod_quantity;
-  final cart_prod_color;
 
-  Single_cart_product({
-    this.cart_prod_name,
-    this.cart_prod_picture,
-    this.cart_prod_color,
-    this.cart_prod_price,
-    this.cart_prod_quantity,
-    this.cart_prod_size,
-});
+class CartProductState extends State<CartProducts> {
+  Map<String, String> config = {'Content-Type': 'application/json'};
+  Map<String, int> _quantity = {};
+  @override
+  void initState() {
+    super.initState();
+    config['Authorization'] = 'Token ' + widget.token;
+    getQuantity();
+  }
+
+  getQuantity() {
+    for (var item in widget.cartItem) {
+      _quantity[item['product_id'].toString()] = item['quantity'];
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    return Container(
+      child: Column(
+        children: <Widget>[
+          Expanded(
+            child: ListView.builder(
+                itemCount: widget.cartItem.length,
+                itemBuilder: (context, index) {
+                  return Dismissible(
+                    key: Key(widget.cartItem[index]['product_id'].toString()),
+                    child: buildSingleCartProduct(widget.cartItem[index]),
+                    background: Container(
+                      color: Colors.red,
+                      child: Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: <Widget>[
+                            SizedBox(
+                              width: MediaQuery.of(context).size.width / 2,
+                            ),
+                            Icon(
+                              Icons.delete,
+                              color: Colors.white,
+                            ),
+                            Text(
+                              'Delete',
+                              style:
+                                  TextStyle(fontSize: 16, color: Colors.white),
+                            )
+                          ],
+                        ),
+                      ),
+                    ),
+                    direction: DismissDirection.endToStart,
+                    onDismissed: (DismissDirection d) {
+                      print(widget.token);
+                      config['Authorization'] = 'Token ' + widget.token;
+                      http
+                          .delete(
+                              Server.deleteCart +
+                                  widget.cartItem[index]['id'].toString() +
+                                  '/',
+                              headers: config)
+                          .then((http.Response response) {
+                        if (response.statusCode == 204) {
+                          Toast.show('Product Removed from Cart', context,
+                              duration: Toast.LENGTH_SHORT,
+                              gravity: Toast.BOTTOM);
+                        } else {
+                          var error = json.decode(response.body);
+                          Toast.show(error['detail'], context,
+                              duration: Toast.LENGTH_SHORT,
+                              gravity: Toast.BOTTOM);
+                        }
+                        setState(() {
+                          widget.cartItem.removeAt(index);
+                        });
+                      });
+                    },
+                    confirmDismiss: (DismissDirection direction) async {
+                      final bool res = await showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: const Text("Confirm"),
+                              content: const Text(
+                                  "Are you sure you wish to delete this item?"),
+                              actions: <Widget>[
+                                FlatButton(
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(true),
+                                    child: const Text("DELETE")),
+                                FlatButton(
+                                  onPressed: () =>
+                                      Navigator.of(context).pop(false),
+                                  child: const Text("CANCEL"),
+                                )
+                              ],
+                            );
+                          });
+                      return res;
+                    },
+                  );
+                }),
+          ),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: ListTile(
+                  title: Text(
+                    "Total:",
+                    style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(calculatePrice().toString(),
+                      style: TextStyle(
+                          color: Colors.red,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600)),
+                ),
+              ),
+              Expanded(
+                child: MaterialButton(
+                  onPressed: () {},
+                  child: Text(
+                    "Check Out",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  color: Colors.red,
+                ),
+              )
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  double calculatePrice() {
+    double total = 0;
+    for (var item in widget.cartItem) {
+      total += item['product_price'] * _quantity[item['product_id'].toString()];
+    }
+    return total;
+  }
+
+  Widget buildSingleCartProduct(Map<String, dynamic> product) {
     return Card(
       child: ListTile(
         //leading section which is a image
-        leading: new Image.asset(cart_prod_picture,width: 80.0,height: 80.0,),
+        leading: new Image.network(
+          Server.localAddress + product['img1'],
+          width: 80.0,
+          height: 80.0,
+        ),
         //title section
-        title: new Text(cart_prod_name),
+        title: Text(product['product_name']),
         //subtitle section
-        subtitle: new Column(
+        subtitle: Column(
           children: <Widget>[
-            //row inside column
-            new Row(
-              children: <Widget>[
-                //section for size of product
-                Padding(
-                  padding: const EdgeInsets.all(0.0),
-                  child: new Text("Size:"),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(4.0),
-                  child: new Text(cart_prod_size,style: TextStyle(color: Colors.red),),
-                ),
-
-                //section for the product color
-                new Padding(padding: const EdgeInsets.fromLTRB(0.0, 8.0, 5.0,8.0),
-                  child: new Text("Color:"),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(4.0),
-                  child: new Text(cart_prod_color,style: TextStyle(color: Colors.red),),
-                ),
-              ],
+            Container(
+              alignment: Alignment.topLeft,
+              child: new Text(
+                "Rs. ${product['product_price']}",
+                style: TextStyle(
+                    fontSize: 17.0,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red),
+              ),
             ),
-            //section for product price
-            new Container(
-              alignment:Alignment.topLeft,
-              child: new Text("\$${cart_prod_price}",style: TextStyle(fontSize: 17.0,fontWeight: FontWeight.bold,color: Colors.red),),
-
-            ),
-
           ],
         ),
-         trailing: Container(
-          width: 45,
-          height: 160,
+        trailing: Container(
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: <Widget>[
-              GestureDetector(child: Icon(Icons.add,size: 17,),onTap: (){}),
-              //new IconButton(icon: Icon(Icons.arrow_drop_up), onPressed: () {},iconSize: 5,),
-              new Text("$cart_prod_quantity",),
-              GestureDetector(child: Icon(Icons.minimize,size: 17,),onTap: (){},),
-              //new IconButton(icon: Icon(Icons.arrow_drop_down), onPressed: (){}),
+              GestureDetector(
+                  child: Icon(
+                    Icons.add,
+                    size: 17,
+                  ),
+                  onTap: () {
+                    if (_quantity[product['product_id'].toString()].toInt() +
+                            1 >
+                        product['product_quantity']) {
+                      Toast.show('Out of Stock', context);
+                    } else {
+                      Map<String, String> body = {
+                        'quantity':
+                            (_quantity[product['product_id'].toString()] + 1)
+                                .toString()
+                      };
+                      http
+                          .patch(
+                              Server.updateCart +
+                                  product['id'].toString() +
+                                  '/',
+                              headers: config,
+                              body: json.encode(body))
+                          .then((http.Response res) {
+                        if (res.statusCode == 200) {
+                          setState(() {
+                            _quantity[product['product_id'].toString()]++;
+                          });
+                        }
+                      });
+                    }
+                  }),
+              Text(
+                _quantity[product['product_id'].toString()].toString(),
+              ),
+              GestureDetector(
+                child: Icon(
+                  Icons.remove,
+                  size: 17,
+                ),
+                onTap: () {
+                  if (_quantity[product['product_id'].toString()] == 1) {
+                    Toast.show('Quantity cannot be less than 1', context);
+                  } else {
+                    Map<String, String> body = {
+                      'quantity':
+                          (_quantity[product['product_id'].toString()] - 1)
+                              .toString()
+                    };
+                    http
+                        .patch(
+                            Server.updateCart + product['id'].toString() + '/',
+                            headers: config,
+                            body: json.encode(body))
+                        .then((http.Response res) {
+                      if (res.statusCode == 200) {
+                        setState(() {
+                          _quantity[product['product_id'].toString()]--;
+                        });
+                      }
+                    });
+                  }
+                },
+              ),
             ],
           ),
         ),
@@ -120,3 +263,29 @@ class Single_cart_product extends StatelessWidget {
   }
 }
 
+// class SingleCartProduct extends StatefulWidget {
+//   final Map<String, dynamic> product;
+//   final String token;
+//   SingleCartProduct({@required this.product, @required this.token});
+
+//   @override
+//   State<StatefulWidget> createState() {
+//     return SingleCartProductState();
+//   }
+// }
+
+// class SingleCartProductState extends State<SingleCartProduct> {
+
+//   Map<String, String> config = {'Content-Type': 'application/json'};
+
+//   @override
+//   void initState() {
+//     super.initState();
+
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return
+//   }
+// }

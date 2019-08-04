@@ -1,6 +1,6 @@
 import 'dart:convert';
-
 import 'package:customer/ServerAddress.dart';
+import 'package:customer/components/pages/productShipmentCart.dart';
 import 'package:flutter/material.dart';
 import 'package:toast/toast.dart';
 import 'package:http/http.dart' as http;
@@ -43,7 +43,8 @@ class CartProductState extends State<CartProducts> {
                 itemBuilder: (context, index) {
                   return Dismissible(
                     key: Key(widget.cartItem[index]['product_id'].toString()),
-                    child: buildSingleCartProduct(widget.cartItem[index]),
+                    child:
+                        buildSingleCartProduct(widget.cartItem[index], index),
                     background: Container(
                       color: Colors.red,
                       child: Center(
@@ -90,6 +91,8 @@ class CartProductState extends State<CartProducts> {
                         setState(() {
                           widget.cartItem.removeAt(index);
                         });
+                      }).catchError((err) {
+                        Toast.show('Net Unavailable', context);
                       });
                     },
                     confirmDismiss: (DismissDirection direction) async {
@@ -129,16 +132,27 @@ class CartProductState extends State<CartProducts> {
                         fontSize: 18,
                         fontWeight: FontWeight.bold),
                   ),
-                  subtitle: Text(calculatePrice().toString(),
-                      style: TextStyle(
-                          color: Colors.red,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600)),
+                  subtitle: Text(
+                    calculatePrice().toString(),
+                    style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600),
+                  ),
                 ),
               ),
               Expanded(
                 child: MaterialButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => ProductShippingCart(
+                              cartItem: widget.cartItem,
+                              total: calculatePrice(),
+                            ),
+                      ),
+                    );
+                  },
                   child: Text(
                     "Check Out",
                     style: TextStyle(color: Colors.white),
@@ -161,7 +175,7 @@ class CartProductState extends State<CartProducts> {
     return total;
   }
 
-  Widget buildSingleCartProduct(Map<String, dynamic> product) {
+  Widget buildSingleCartProduct(Map<String, dynamic> product, int index) {
     return Card(
       child: ListTile(
         //leading section which is a image
@@ -218,8 +232,12 @@ class CartProductState extends State<CartProducts> {
                         if (res.statusCode == 200) {
                           setState(() {
                             _quantity[product['product_id'].toString()]++;
+                            widget.cartItem[index]['quantity']++;
+                            print(widget.cartItem);
                           });
                         }
+                      }).catchError((err) {
+                        Toast.show('Net Unavailable', context);
                       });
                     }
                   }),
@@ -249,8 +267,12 @@ class CartProductState extends State<CartProducts> {
                       if (res.statusCode == 200) {
                         setState(() {
                           _quantity[product['product_id'].toString()]--;
+                          widget.cartItem[index]['quantity']--;
+                          print(widget.cartItem);
                         });
                       }
+                    }).catchError((err) {
+                      Toast.show('Net Unavailable', context);
                     });
                   }
                 },
@@ -262,30 +284,3 @@ class CartProductState extends State<CartProducts> {
     );
   }
 }
-
-// class SingleCartProduct extends StatefulWidget {
-//   final Map<String, dynamic> product;
-//   final String token;
-//   SingleCartProduct({@required this.product, @required this.token});
-
-//   @override
-//   State<StatefulWidget> createState() {
-//     return SingleCartProductState();
-//   }
-// }
-
-// class SingleCartProductState extends State<SingleCartProduct> {
-
-//   Map<String, String> config = {'Content-Type': 'application/json'};
-
-//   @override
-//   void initState() {
-//     super.initState();
-
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return
-//   }
-// }

@@ -4,10 +4,11 @@ import 'package:customer/ServerAddress.dart';
 import 'package:flutter/material.dart';
 import 'package:customer/components/pages/prouct_details.dart';
 import 'package:http/http.dart' as http;
+import 'package:toast/toast.dart';
 
-class Scu_pro extends StatelessWidget {
+class CategoryProduct extends StatelessWidget {
   List<dynamic> productList;
-  Scu_pro({@required this.productList});
+  CategoryProduct({@required this.productList});
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
@@ -15,16 +16,16 @@ class Scu_pro extends StatelessWidget {
         gridDelegate:
             new SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2),
         itemBuilder: (BuildContext context, int index) {
-          return Single_prod(
+          return SingleProd(
             product: productList[index],
           );
         });
   }
 }
 
-class Single_prod extends StatelessWidget {
+class SingleProd extends StatelessWidget {
   final Map<String, dynamic> product;
-  Single_prod({@required this.product});
+  SingleProd({@required this.product});
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -44,6 +45,8 @@ class Single_prod extends StatelessWidget {
                         ),
                   ),
                 );
+              }).catchError((err) {
+                Toast.show('Net Unavailable', context);
               });
             },
             child: GridTile(

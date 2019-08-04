@@ -1,4 +1,5 @@
-import 'package:customer/main.dart';
+import 'package:customer/components/pages/passwordReset.dart';
+import 'package:customer/components/pages/verification.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_custom_clippers/flutter_custom_clippers.dart';
 import 'package:customer/components/signup.dart';
@@ -80,7 +81,6 @@ class _LoginState extends State<Login> {
                         password = v;
                       },
                       decoration: InputDecoration(
-                        
                         hintText: "Password",
                         hintStyle: TextStyle(color: Colors.red.shade200),
                         border: InputBorder.none,
@@ -102,11 +102,21 @@ class _LoginState extends State<Login> {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: <Widget>[
                       Container(
-                          padding: EdgeInsets.only(right: 20.0),
+                        padding: EdgeInsets.only(right: 20.0),
+                        child: GestureDetector(
                           child: Text(
                             "Forgot Password",
                             style: TextStyle(color: Colors.black45),
-                          ))
+                          ),
+                          onTap: () {
+                            Navigator.of(context).pushReplacement(
+                              MaterialPageRoute(
+                                builder: (BuildContext context) => ResetPage(),
+                              ),
+                            );
+                          },
+                        ),
+                      )
                     ],
                   ),
                   SizedBox(
@@ -173,7 +183,7 @@ class _LoginState extends State<Login> {
             prefs.setString('phone_no', userData['phone_no']);
             Toast.show('Login Successful', context,
                 duration: Toast.LENGTH_SHORT, gravity: Toast.BOTTOM);
-            Navigator.of(context).pop();
+            Navigator.of(context).pop(userData);
           } else if (response.statusCode == 401) {
             Map<String, dynamic> info = json.decode(response.body);
             if (info.containsKey('detail')) {
@@ -181,19 +191,21 @@ class _LoginState extends State<Login> {
                 print(info['detail']);
                 Toast.show(info['detail'], context,
                     duration: Toast.LENGTH_SHORT, gravity: Toast.BOTTOM);
-                // Navigator.of(context).push(
-                //   MaterialPageRoute(
-                //     builder: (BuildContext context) => Verify(
-                //           from: 'login',
-                //         ),
-                //   ),
-                // );
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (BuildContext context) => Verify(
+                          from: 'login',
+                        ),
+                  ),
+                );
               } else {
                 Toast.show(info['detail'], context,
                     duration: Toast.LENGTH_SHORT, gravity: Toast.BOTTOM);
               }
             }
           }
+        }).catchError((err) {
+          Toast.show('Net Unavailable', context);
         });
       } catch (e) {
         setState(() {
@@ -219,30 +231,37 @@ class _LoginState extends State<Login> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Form(
-        key: _formKey,
-        child: Container(
-          color: Colors.red.shade100,
-          child: ListView(
-            children: <Widget>[
-              _buildLoginForm(),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  FlatButton(
-                    onPressed: () {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (BuildContext context) => Signup()));
-                    },
-                    child: Text("Sign Up!",
-                        style: TextStyle(color: Colors.red, fontSize: 18.0)),
-                  )
-                ],
-              )
-            ],
+    return WillPopScope(
+      onWillPop: () {
+        Map<String, dynamic> t = {};
+        Navigator.of(context).pop(t);
+        return Future.value(false);
+      },
+      child: Scaffold(
+        body: Form(
+          key: _formKey,
+          child: Container(
+            color: Colors.red.shade100,
+            child: ListView(
+              children: <Widget>[
+                _buildLoginForm(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    FlatButton(
+                      onPressed: () {
+                        Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                                builder: (BuildContext context) => Signup()));
+                      },
+                      child: Text("Sign Up!",
+                          style: TextStyle(color: Colors.red, fontSize: 18.0)),
+                    )
+                  ],
+                )
+              ],
+            ),
           ),
         ),
       ),

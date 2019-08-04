@@ -4,6 +4,7 @@ import 'package:customer/ServerAddress.dart';
 import 'package:flutter/material.dart';
 import 'package:customer/components/pages/prouct_details.dart';
 import 'package:http/http.dart' as http;
+import 'package:toast/toast.dart';
 
 class Products extends StatelessWidget {
   final List<dynamic> products;
@@ -50,13 +51,13 @@ class Single_prod extends StatelessWidget {
                 Map<String, dynamic> productDetail = json.decode(response.body);
                 Navigator.of(context).push(
                   new MaterialPageRoute(
-                    //passing the values of product to product_details page
                     builder: (context) => new ProductDetails(
-                          // productId: product['id'].toString(),
                           productDetail: productDetail,
                         ),
                   ),
                 );
+              }).catchError((err) {
+                Toast.show('Net Unavailable', context);
               });
             },
             child: GridTile(

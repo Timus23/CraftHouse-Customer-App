@@ -1,8 +1,7 @@
 import 'dart:convert';
-import 'dart:ui' as prefix0;
 
 import 'package:customer/ServerAddress.dart';
-import 'package:customer/components/pages/login1.dart';
+import 'package:customer/components/pages/login.dart';
 import 'package:flutter/material.dart';
 import 'package:customer/components/pages/product_shipment.dart';
 import 'package:carousel_pro/carousel_pro.dart';
@@ -22,7 +21,7 @@ class ProductDetails extends StatefulWidget {
 class _ProductDetailsState extends State<ProductDetails> {
   var prod;
   bool authenticate;
-  Map<String, String> userInfo = {};
+  Map<String, dynamic> userInfo = {};
   Map<String, String> body = {};
   var rating = 0.0;
   final _formKey = GlobalKey<FormState>();
@@ -42,14 +41,10 @@ class _ProductDetailsState extends State<ProductDetails> {
     if (pref.getString('token') == null) {
       setState(() {
         authenticate = false;
-        print('----------------------------------------');
-        print('not login');
       });
     } else {
       setState(() {
         authenticate = true;
-        print('----------------------------------------');
-        print('login');
         config['Authorization'] = 'Token ' + pref.getString('token');
         userInfo['id'] = pref.getInt('id').toString();
         userInfo['first_name'] = pref.getString('first_name');
@@ -89,7 +84,6 @@ class _ProductDetailsState extends State<ProductDetails> {
           child: RaisedButton(
             onPressed: () {
               if (authenticate) {
-                print('aayo');
                 var data = {
                   'user_id': userInfo['id'],
                   'first_name': userInfo['first_name'],
@@ -102,8 +96,6 @@ class _ProductDetailsState extends State<ProductDetails> {
                         headers: config, body: json.encode(data))
                     .then((http.Response res) {
                   if (res.statusCode == 201) {
-                    print('------------------------');
-                    print('rating vayo');
                     http
                         .get(Server.products + prod['id'].toString() + '/')
                         .then((http.Response r) {
@@ -117,21 +109,35 @@ class _ProductDetailsState extends State<ProductDetails> {
                             duration: Toast.LENGTH_SHORT,
                             gravity: Toast.BOTTOM);
                       }
+                    }).catchError((err) {
+                      Toast.show('Net Unavailable', context);
                     });
                   } else {
-                    print('------------------------');
-                    print('rating vayena');
-                    print(res.statusCode);
                     Toast.show("Unable to rate the Product", context,
                         duration: Toast.LENGTH_SHORT, gravity: Toast.BOTTOM);
                   }
+                }).catchError((err) {
+                  Toast.show('Net Unavailable', context);
                 });
               } else {
                 Toast.show("Please Login to give rating", context,
                     duration: Toast.LENGTH_SHORT, gravity: Toast.BOTTOM);
 
-                Navigator.of(context).push(MaterialPageRoute(
-                    builder: (BuildContext context) => Login()));
+                Navigator.of(context)
+                    .push<Map<String, dynamic>>(
+                  MaterialPageRoute(
+                    builder: (BuildContext context) => Login(),
+                  ),
+                )
+                    .then((val) {
+                  if (val.length > 0) {
+                    setState(() {
+                      authenticate = true;
+                      userInfo = val;
+                      config['Authorization'] = 'Token ' + val['token'];
+                    });
+                  }
+                });
               }
             },
             child: Text("Submit", style: TextStyle(color: Colors.white)),
@@ -162,7 +168,6 @@ class _ProductDetailsState extends State<ProductDetails> {
                 if (value.isEmpty) {
                   return "Cannot enter an empty review";
                 }
-                // return null;
               },
               style: TextStyle(color: Colors.black),
               onSaved: (String val) {
@@ -178,8 +183,6 @@ class _ProductDetailsState extends State<ProductDetails> {
                 if (_formKey.currentState.validate()) {
                   _formKey.currentState.save();
                   if (authenticate) {
-                    print('aayo');
-                    print(reviewed);
                     Map<String, String> data = {
                       'user_id': userInfo['id'].toString(),
                       'first_name': userInfo['first_name'].toString(),
@@ -192,8 +195,6 @@ class _ProductDetailsState extends State<ProductDetails> {
                             headers: config, body: json.encode(data))
                         .then((http.Response res) {
                       if (res.statusCode == 201) {
-                        print('------------------------');
-                        print('review vayo');
                         http
                             .get(Server.products + prod['id'].toString() + '/')
                             .then((http.Response r) {
@@ -207,22 +208,36 @@ class _ProductDetailsState extends State<ProductDetails> {
                                 duration: Toast.LENGTH_SHORT,
                                 gravity: Toast.BOTTOM);
                           }
+                        }).catchError((err) {
+                          Toast.show('Net Unavailable', context);
                         });
                       } else {
-                        print('------------------------');
-                        print('review vayena');
-                        print(res.statusCode);
                         Toast.show("Unable to review the Product", context,
                             duration: Toast.LENGTH_SHORT,
                             gravity: Toast.BOTTOM);
                       }
+                    }).catchError((err) {
+                      Toast.show('Net Unavailable', context);
                     });
                   } else {
                     Toast.show("Please Login to give review", context,
                         duration: Toast.LENGTH_SHORT, gravity: Toast.BOTTOM);
 
-                    Navigator.of(context).push(MaterialPageRoute(
-                        builder: (BuildContext context) => Login()));
+                    Navigator.of(context)
+                        .push<Map<String, dynamic>>(
+                      MaterialPageRoute(
+                        builder: (BuildContext context) => Login(),
+                      ),
+                    )
+                        .then((val) {
+                      if (val.length > 0) {
+                        setState(() {
+                          authenticate = true;
+                          userInfo = val;
+                          config['Authorization'] = 'Token ' + val['token'];
+                        });
+                      }
+                    });
                   }
                 }
               },
@@ -380,16 +395,23 @@ class _ProductDetailsState extends State<ProductDetails> {
                           Toast.show(
                               'Quantity must be greater than 0', context);
                         } else {
-                          print('------------------------');
-                          print(userInfo);
-                          if (userInfo.length == 0) {
+                          if (!authenticate) {
                             Toast.show('Please Log In', context);
-                            Navigator.push(
+                            Navigator.push<Map<String, dynamic>>(
                               context,
                               MaterialPageRoute(
                                 builder: (context) => Login(),
                               ),
-                            );
+                            ).then((val) {
+                              if (val.length > 0) {
+                                setState(() {
+                                  authenticate = true;
+                                  userInfo = val;
+                                  config['Authorization'] =
+                                      'Token ' + val['token'];
+                                });
+                              }
+                            });
                           } else {
                             Navigator.push(
                               context,
@@ -416,29 +438,52 @@ class _ProductDetailsState extends State<ProductDetails> {
                       color: Colors.red,
                     ),
                     onPressed: () {
-                      Map<String, String> data = {
-                        'user_id': userInfo['id'].toString(),
-                        'product_id': prod['id'].toString(),
-                        'quantity': _quantity.toString()
-                      };
-                      http
-                          .post(Server.cart,
-                              headers: config, body: json.encode(data))
-                          .then((http.Response res) {
-                        if (res.statusCode == 200 || res.statusCode == 201) {
-                          Toast.show('Added To cart', context);
-                        } else if (res.statusCode == 400) {
-                          Map<String, dynamic> temp = json.decode(res.body);
-                          print(temp);
-                          if (temp.containsKey('non_field_errors')) {
-                            Toast.show('Product Already in Cart', context);
+                      if (authenticate) {
+                        Map<String, String> data = {
+                          'user_id': userInfo['id'].toString(),
+                          'product_id': prod['id'].toString(),
+                          'quantity': _quantity.toString()
+                        };
+                        http
+                            .post(Server.cart,
+                                headers: config, body: json.encode(data))
+                            .then((http.Response res) {
+                          if (res.statusCode == 200 || res.statusCode == 201) {
+                            Toast.show('Added To cart', context);
+                          } else if (res.statusCode == 400) {
+                            Map<String, dynamic> temp = json.decode(res.body);
+                            print(temp);
+                            if (temp.containsKey('non_field_errors')) {
+                              Toast.show('Product Already in Cart', context);
+                            } else {
+                              Toast.show('Unable to add to cart', context);
+                            }
                           } else {
                             Toast.show('Unable to add to cart', context);
                           }
-                        } else {
-                          Toast.show('Unable to add to cart', context);
-                        }
-                      });
+                        }).catchError((err) {
+                          Toast.show('Net Unavailable', context);
+                        });
+                      } else {
+                        Toast.show("Please Login to add to Cart", context,
+                            duration: Toast.LENGTH_SHORT,
+                            gravity: Toast.BOTTOM);
+                        Navigator.of(context)
+                            .push<Map<String, dynamic>>(
+                          MaterialPageRoute(
+                            builder: (BuildContext context) => Login(),
+                          ),
+                        )
+                            .then((val) {
+                          if (val.length > 0) {
+                            setState(() {
+                              authenticate = true;
+                              userInfo = val;
+                              config['Authorization'] = 'Token ' + val['token'];
+                            });
+                          }
+                        });
+                      }
                     }),
               ],
             ),
@@ -497,7 +542,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                 : Container(
                     height: 340.0,
                     child: reviewList(),
-                  )
+                  ),
           ],
         ),
       );

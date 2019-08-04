@@ -18,20 +18,8 @@ class SelectAddressState extends State<SelectAddress> {
   List<dynamic> address = [];
   @override
   void initState() {
-    // getAddress();
     super.initState();
   }
-
-  // void getAddress() {
-  //   http.get(Server.addAddress + widget.userId + '/').then((http.Response r) {
-  //     if (r.statusCode == 200) {
-  //       setState(() {
-  //         address = json.decode(r.body);
-  //         print(address);
-  //       });
-  //     }
-  //   });
-  // }
 
   @override
   Widget build(BuildContext context) {
@@ -55,6 +43,7 @@ class SelectAddressState extends State<SelectAddress> {
       onWillPop: () {
         Map<String,dynamic> temp = {}; 
         Navigator.of(context).pop(temp);
+        return Future.value(false);
       },
       child: Scaffold(
         appBar: new AppBar(

@@ -4,6 +4,7 @@ import 'package:customer/ServerAddress.dart';
 import 'package:flutter/material.dart';
 import 'package:customer/components/pages/sculpture.dart';
 import 'package:http/http.dart' as http;
+import 'package:toast/toast.dart';
 
 class HorizontalList extends StatelessWidget {
   final List<dynamic> category;
@@ -14,8 +15,8 @@ class HorizontalList extends StatelessWidget {
   Widget build(BuildContext context) {
     Widget buildCategory(BuildContext context, int index) {
       return Category(
-        image_caption: category[index]['cat_name'],
-        image_location: category[index]['cat_logo'],
+        imageCaption: category[index]['cat_name'],
+        imageLocation: category[index]['cat_logo'],
       );
     }
 
@@ -31,17 +32,17 @@ class HorizontalList extends StatelessWidget {
 }
 
 class Category extends StatelessWidget {
-  final String image_location;
-  final String image_caption;
+  final String imageLocation;
+  final String imageCaption;
 
-  Category({this.image_location, this.image_caption});
+  Category({this.imageLocation, this.imageCaption});
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(2.0),
       child: InkWell(
         onTap: () {
-          var s = image_caption;
+          var s = imageCaption;
           http.get(Server.category + s + '/').then((http.Response res) {
             if (res.statusCode == 200 || res.statusCode == 201) {
               List<dynamic> prod = json.decode(res.body);
@@ -49,13 +50,15 @@ class Category extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => new Sculpture(
+                  builder: (context) => new Categories(
                         products: prod,
                         title: s,
                       ),
                 ),
               );
             }
+          }).catchError((err) {
+            Toast.show('Net Unavailable', context);
           });
         },
         child: Container(
@@ -63,14 +66,14 @@ class Category extends StatelessWidget {
           child: ListTile(
             title: FadeInImage.assetNetwork(
               placeholder: 'images/imageLoading.gif',
-              image: image_location,
+              image: imageLocation,
               height: 80,
               width: 100,
             ),
             subtitle: Container(
               alignment: Alignment.topCenter,
               child: Text(
-                image_caption,
+                imageCaption,
               ),
             ),
           ),

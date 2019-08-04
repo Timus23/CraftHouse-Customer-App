@@ -1,10 +1,10 @@
+import 'package:customer/ServerAddress.dart';
+import 'package:customer/components/pages/login.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_custom_clippers/flutter_custom_clippers.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:toast/toast.dart';
-import 'login1.dart';
-import 'package:customer/ServerAddress.dart';
 
 class ChangePassword extends StatefulWidget {
   final String code;
@@ -146,6 +146,8 @@ class ChangePasswordState extends State<ChangePassword> {
                 duration: Toast.LENGTH_SHORT, gravity: Toast.BOTTOM);
           }
         }
+      }).catchError((err) {
+        Toast.show('Net Unavailable', context);
       });
     }
   }

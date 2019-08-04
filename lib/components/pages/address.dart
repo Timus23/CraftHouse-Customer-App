@@ -182,9 +182,6 @@ class _AddressState extends State<Address> {
   void submitButton() {
     if (_formKey.currentState.validate()) {
       _formKey.currentState.save();
-      print('----------------------------');
-      print(body);
-      print(config);
       http
           .post(Server.addAddress, headers: config, body: json.encode(body))
           .then((http.Response r) {
@@ -194,6 +191,8 @@ class _AddressState extends State<Address> {
         } else {
           Toast.show("Unable to add address", context);
         }
+      }).catchError((err) {
+        Toast.show('Net Unavailable', context);
       });
     }
   }

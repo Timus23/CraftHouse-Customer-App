@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:customer/components/scul_pro.dart';
 
-class Sculpture extends StatelessWidget {
+class Categories extends StatelessWidget {
   final List<dynamic> products;
   final String title;
-  Sculpture({@required this.products, @required this.title});
+  Categories({@required this.products, @required this.title});
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: new AppBar(
@@ -16,7 +16,7 @@ class Sculpture extends StatelessWidget {
         children: <Widget>[
           Container(
             height: 1200,
-            child: Scu_pro(
+            child: CategoryProduct(
               productList: products,
             ),
           ),

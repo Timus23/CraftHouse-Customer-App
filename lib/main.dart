@@ -1,27 +1,30 @@
 import 'dart:convert';
 
 import 'package:customer/ServerAddress.dart';
+import 'package:customer/components/pages/account.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:carousel_pro/carousel_pro.dart';
 import 'package:customer/components/pages/cart.dart';
-import 'package:customer/components/pages/login1.dart';
+import 'package:customer/components/pages/login.dart';
 //my imports
 import 'package:customer/components/pages/about.dart';
 import 'package:customer/components/horizontal_listview.dart';
 import 'package:customer/components/pages/mypurchaes.dart';
 import 'package:customer/components/pages/videos.dart';
 import 'package:customer/components/products.dart';
-import 'package:customer/components/pages/prouct_details.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:toast/toast.dart';
+import 'package:connectivity/connectivity.dart';
 
 void main() {
-  runApp(MaterialApp(
-    debugShowCheckedModeBanner: false,
-    home: Homepage(),
-  ));
+  runApp(
+    MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Homepage(),
+    ),
+  );
 }
 
 class Homepage extends StatefulWidget {
@@ -33,7 +36,8 @@ class _HomepageState extends State<Homepage> {
   final List<String> kWords;
   SharedPreferences pref;
   bool authenticate = false;
-  Map<String, String> userInfo = {};
+  bool connectionState = false;
+  Map<String, dynamic> userInfo = {};
   _SearchAppBarDelegate _searchDelegate;
   TextEditingController _searchController = TextEditingController();
 
@@ -46,9 +50,23 @@ class _HomepageState extends State<Homepage> {
   @override
   void initState() {
     super.initState();
+    checkConnection();
     checkAuthentication();
-    //Initializing search delegate with sorted list of English words
     _searchDelegate = _SearchAppBarDelegate(kWords);
+  }
+
+  void checkConnection() async {
+    var result = await Connectivity().checkConnectivity();
+    if (result == ConnectivityResult.none) {
+      setState(() {
+        connectionState = false;
+      });
+    }
+    if (result == ConnectivityResult.wifi) {
+      setState(() {
+        connectionState = true;
+      });
+    }
   }
 
   checkAuthentication() async {
@@ -56,14 +74,10 @@ class _HomepageState extends State<Homepage> {
     if (pref.getString('token') == null) {
       setState(() {
         authenticate = false;
-        print('----------------------------------------');
-        print('not login');
       });
     } else {
       setState(() {
         authenticate = true;
-        print('----------------------------------------');
-        print('login');
         userInfo['token'] = pref.getString('token');
         userInfo['id'] = pref.getInt('id').toString();
         userInfo['first_name'] = pref.getString('first_name');
@@ -76,13 +90,12 @@ class _HomepageState extends State<Homepage> {
 
   @override
   Widget build(BuildContext context) {
-    Widget image_carousel = new Container(
+    Widget imageCarousel = new Container(
       height: 200.0,
       child: new Carousel(
         boxFit: BoxFit.cover,
         images: [
           AssetImage('images/a.jpg'),
-          AssetImage('images/b.jpg'),
           AssetImage('images/c.jpg'),
           AssetImage('images/d.jpg'),
           AssetImage('images/e.jpg'),
@@ -95,6 +108,29 @@ class _HomepageState extends State<Homepage> {
         indicatorBgPadding: 2.0,
       ),
     );
+
+    Widget reconnect(msg) {
+      return Container(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Center(
+              child: Text(msg),
+            ),
+            Center(
+              child: IconButton(
+                icon: Icon(Icons.refresh),
+                onPressed: () {
+                  setState(() {
+                    checkConnection();
+                  });
+                },
+              ),
+            )
+          ],
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -118,20 +154,26 @@ class _HomepageState extends State<Homepage> {
               onPressed: () {
                 if (userInfo['token'] == null || userInfo['id'] == null) {
                   Toast.show('Please Log In', context);
-                  Navigator.push(
+                  Navigator.push<Map<String, dynamic>>(
                     context,
                     MaterialPageRoute(
                       builder: (context) => Login(),
                     ),
-                  );
-                  checkAuthentication();
+                  ).then((val) {
+                    if (val.length > 0) {
+                      setState(() {
+                        authenticate = true;
+                        userInfo = val;
+                      });
+                    }
+                  });
                 } else {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => new Cart(
                             token: userInfo['token'],
-                            userId: userInfo['id'],
+                            userId: userInfo['id'].toString(),
                           ),
                     ),
                   );
@@ -175,13 +217,29 @@ class _HomepageState extends State<Homepage> {
 
             InkWell(
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => new Login(),
-                  ),
-                );
-                checkAuthentication();
+                if (authenticate) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => Account(
+                            userData: userInfo,
+                          ),
+                    ),
+                  );
+                } else {
+                  Navigator.push<Map<String, dynamic>>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => new Login(),
+                    ),
+                  ).then((val) {
+                    if (val.length > 0) {
+                      setState(() {
+                        userInfo = val;
+                        authenticate = true;
+                      });
+                    }
+                  });
+                }
               },
               child: ListTile(
                 title: Text('My Account'),
@@ -194,8 +252,33 @@ class _HomepageState extends State<Homepage> {
 
             InkWell(
               onTap: () {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => new mypurchaes()));
+                if (userInfo['token'] == null || userInfo['id'] == null) {
+                  Toast.show('Please Log In', context);
+                  Navigator.push<Map<String, dynamic>>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => Login(),
+                    ),
+                  ).then((val) {
+                    if (val.length > 0) {
+                      setState(() {
+                        authenticate = true;
+                        userInfo = val;
+                      });
+                    }
+                  });
+                } else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MyPurchase(
+                            config: {
+                              'Authorization': 'Token ' + userInfo['token']
+                            },
+                          ),
+                    ),
+                  );
+                }
               },
               child: ListTile(
                 title: Text('My Purchases'),
@@ -208,34 +291,28 @@ class _HomepageState extends State<Homepage> {
 
             InkWell(
               onTap: () {
-                print('----------------------------');
-                print(userInfo);
                 if (userInfo['token'] == null || userInfo['id'] == null) {
                   Toast.show('Please Log In', context);
-                  Navigator.push(
-
-
-
-
-
-
-
-
-
-                    
+                  Navigator.push<Map<String, dynamic>>(
                     context,
                     MaterialPageRoute(
                       builder: (context) => Login(),
                     ),
-                  );
-                  checkAuthentication();
+                  ).then((val) {
+                    if (val.length > 0) {
+                      setState(() {
+                        authenticate = true;
+                        userInfo = val;
+                      });
+                    }
+                  });
                 } else {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => new Cart(
                             token: userInfo['token'],
-                            userId: userInfo['id'],
+                            userId: userInfo['id'].toString(),
                           ),
                     ),
                   );
@@ -283,59 +360,61 @@ class _HomepageState extends State<Homepage> {
           ],
         ),
       ),
-      body: ListView(
-        children: <Widget>[
-          //carousel begins
-          image_carousel,
-          //padding_widget
-          new Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: new Text('Categories'),
-          ),
+      body: connectionState
+          ? (ListView(
+              children: <Widget>[
+                //carousel begins
+                imageCarousel,
+                //padding_widget
+                new Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: new Text('Categories'),
+                ),
 
-          //horizontal list
-          FutureBuilder(
-            future: http.get(Server.category),
-            builder: (BuildContext context, AsyncSnapshot snap) {
-              if (snap.connectionState == ConnectionState.waiting) {
-                return Center(
-                  child: Image.asset('images/imageLoading.gif'),
-                );
-              } else if (snap.connectionState == ConnectionState.done) {
-                List<dynamic> _category = json.decode(snap.data.body);
-                return HorizontalList(
-                  category: _category,
-                );
-              }
-            },
-          ),
+                //horizontal list
+                FutureBuilder(
+                  future: http.get(Server.category),
+                  builder: (BuildContext context, AsyncSnapshot snap) {
+                    if (snap.connectionState == ConnectionState.waiting) {
+                      return Center(
+                        child: Image.asset('images/imageLoading.gif'),
+                      );
+                    } else if (snap.connectionState == ConnectionState.done) {
+                      List<dynamic> _category = json.decode(snap.data.body);
+                      return HorizontalList(
+                        category: _category,
+                      );
+                    }
+                  },
+                ),
 
-          //padding widget
-          new Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: new Text('Recent Products'),
-          ),
-          //grid view
-          Container(
-            height: 320,
-            child: FutureBuilder(
-              future: http.get(Server.products),
-              builder: (BuildContext context, AsyncSnapshot snap) {
-                if (snap.connectionState == ConnectionState.waiting) {
-                  return Center(
-                    child: Image.asset('images/imageLoading.gif'),
-                  );
-                } else if (snap.connectionState == ConnectionState.done) {
-                  List<dynamic> products = json.decode(snap.data.body);
-                  return Products(
-                    products: products,
-                  );
-                }
-              },
-            ),
-          )
-        ],
-      ),
+                //padding widget
+                new Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: new Text('Recent Products'),
+                ),
+                //grid view
+                Container(
+                  height: 320,
+                  child: FutureBuilder(
+                    future: http.get(Server.products),
+                    builder: (BuildContext context, AsyncSnapshot snap) {
+                      if (snap.connectionState == ConnectionState.waiting) {
+                        return Center(
+                          child: Image.asset('images/imageLoading.gif'),
+                        );
+                      } else if (snap.connectionState == ConnectionState.done) {
+                        List<dynamic> products = json.decode(snap.data.body);
+                        return Products(
+                          products: products,
+                        );
+                      }
+                    },
+                  ),
+                )
+              ],
+            ))
+          : reconnect('No Connection!!'),
     );
   }
 }
@@ -405,24 +484,6 @@ class _SearchAppBarDelegate extends SearchDelegate<String> {
               child: Products(
                 products: list,
               ),
-              //Column(
-              //mainAxisSize: MainAxisSize.min,
-              //children: <Widget>[
-              //GestureDetector(
-              //onTap: () {
-              //needs to be resolved.
-              //this.close(context, null);
-              //},
-              //child: Text(
-              //this.query,
-              //style: Theme.of(context)
-              // .textTheme
-              //   .display2
-              //     .copyWith(fontWeight: FontWeight.normal),
-              // ),
-              // ),
-              // ],
-              //),
             ),
           );
         }

@@ -5,13 +5,12 @@ import 'package:customer/components/pages/selectAddress.dart';
 import 'package:customer/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:customer/components/pages/address.dart';
 import 'package:toast/toast.dart';
 import 'package:flutter_khalti/flutter_khalti.dart';
 import 'package:http/http.dart' as http;
 
 class ProductShipping extends StatefulWidget {
-  Map<String, String> userInfo;
+  Map<String, dynamic> userInfo;
   Map<String, dynamic> productDetail;
   Map<String, String> config;
   int quantity;
@@ -56,10 +55,6 @@ class _ProductShippingState extends State<ProductShipping> {
         amount: (widget.productDetail['product_price'] * widget.quantity * 100),
       ).initPayment(
         onSuccess: (data) {
-          print('-----------Initial Khalti Response---------------');
-          print(data);
-          print('\n\n------------------token-------------------------');
-          print('token' + data['token']);
           final Map<String, String> body = {
             'user_id': widget.userInfo['id'].toString(),
             'product_id': data['product_identity'].toString(),
@@ -69,8 +64,7 @@ class _ProductShippingState extends State<ProductShipping> {
             'price': data['amount'].toString(),
             'token': data['token'].toString(),
           };
-          String localhost = Server.payment;
-          print('--------------------------------------');
+          String localhost = Server.productPayment;
           List<Map<String, String>> content = new List();
           content.add(body);
           http
@@ -79,18 +73,16 @@ class _ProductShippingState extends State<ProductShipping> {
               .then((http.Response response) {
             final int statusCode = response.statusCode;
             if (statusCode == 200 || statusCode == 201) {
-              print('-----------Status Code----------------');
-              print(statusCode);
               Toast.show('Payment Successful', context,
                   duration: Toast.LENGTH_SHORT, gravity: Toast.BOTTOM);
               Navigator.of(context)
                   .push(MaterialPageRoute(builder: (context) => Homepage()));
             } else {
-              print(statusCode);
-              print(response.body);
               Toast.show('Payment Unsuccessful', context,
                   duration: Toast.LENGTH_SHORT, gravity: Toast.BOTTOM);
             }
+          }).catchError((err) {
+            Toast.show('Net Unavailable', context);
           });
         },
         onError: (error) {
@@ -104,11 +96,6 @@ class _ProductShippingState extends State<ProductShipping> {
       if (_selectedAddress.length == 0) {
         Toast.show('Select Address', context);
       } else {
-        print('----------------------------------');
-        print(widget.config);
-        print(widget.productDetail);
-        print(widget.userInfo);
-        print(widget.quantity);
         _payViaKhalti();
       }
     }
@@ -156,7 +143,7 @@ class _ProductShippingState extends State<ProductShipping> {
                         .push<Map<String, dynamic>>(
                       MaterialPageRoute(
                         builder: (BuildContext context) => SelectAddress(
-                              userId: '2',
+                              userId: widget.userInfo['id'].toString(),
                             ),
                       ),
                     )
